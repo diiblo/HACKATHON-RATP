@@ -62,7 +62,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         }
 
         $sql = 'SELECT id FROM app_user WHERE actif = :actif AND (' . implode(' OR ', $conditions) . ')';
-        $ids = array_column($conn->prepare($sql)->executeQuery($params)->fetchAllAssociative(), 'id');
+        $ids = array_column($conn->executeQuery($sql, $params)->fetchAllAssociative(), 'id');
 
         if ($ids === []) {
             return [];
