@@ -38,6 +38,7 @@ Thumbs.db
 *.swo
 *~
 
-# Documentation: ignore all Markdown except README
+# Documentation: ignore all Markdown except README and key docs
 *.md
 !README.md
+!POWERPOINT_BRIEF.md
