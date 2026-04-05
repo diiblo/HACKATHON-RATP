@@ -44,25 +44,23 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $conn = $this->getEntityManager()->getConnection();
         $platform = $conn->getDatabasePlatform();
         $conditions = [];
-        $params = ['actif' => true];
 
+        // Paramètres positionnels pour éviter les conflits DBAL avec les casts PostgreSQL (::jsonb)
+        $positional = [true]; // actif = $1
         if ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform) {
-            foreach ($roles as $i => $role) {
-                $param = 'role_' . $i;
-                $conditions[] = "roles::jsonb @> :{$param}::jsonb";
-                $params[$param] = json_encode([$role]);
+            foreach ($roles as $role) {
+                $conditions[] = 'roles::jsonb @> CAST(? AS jsonb)';
+                $positional[] = json_encode([$role]);
             }
         } else {
-            // Fallback SQLite/autre : LIKE sur la représentation JSON sérialisée
-            foreach ($roles as $i => $role) {
-                $param = 'role_' . $i;
-                $conditions[] = "roles LIKE :{$param}";
-                $params[$param] = '%"' . $role . '"%';
+            foreach ($roles as $role) {
+                $conditions[] = "roles LIKE ?";
+                $positional[] = '%"' . $role . '"%';
             }
         }
 
-        $sql = 'SELECT id FROM app_user WHERE actif = :actif AND (' . implode(' OR ', $conditions) . ')';
-        $ids = array_column($conn->executeQuery($sql, $params)->fetchAllAssociative(), 'id');
+        $sql = 'SELECT id FROM app_user WHERE actif = ? AND (' . implode(' OR ', $conditions) . ')';
+        $ids = array_column($conn->executeQuery($sql, $positional)->fetchAllAssociative(), 'id');
 
         if ($ids === []) {
             return [];
