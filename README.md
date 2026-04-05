@@ -173,6 +173,15 @@ ddev exec php bin/console app:load-fixtures --reset
 ddev exec php bin/console app:load-fixtures --reset
 ```
 
+> **Important** : `app:load-fixtures --reset` remet à zéro les fournisseurs IA (tous désactivés).
+> Il faut **toujours** relancer `app:ai:sync-real-providers` juste après, sinon le pré-triage IA
+> ne tournera pas et les managers ne verront aucune analyse automatique dans les signalements.
+
+```bash
+# Obligatoire après chaque reset des fixtures
+ddev exec php bin/console app:ai:sync-real-providers
+```
+
 ### IA
 
 ```bash
@@ -213,6 +222,8 @@ ddev logs -f   # mode live
 ---
 
 ## Réinitialisation rapide avant démo
+
+> Ces 3 commandes dans l'ordre — ne pas sauter `app:ai:sync-real-providers`, sinon aucune analyse IA ne sera générée.
 
 ```bash
 ddev exec php bin/console app:load-fixtures --reset
