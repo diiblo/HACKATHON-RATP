@@ -1,0 +1,67 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Connexion — RATP Signalements{% endblock %}
+
+{% block body %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-body p-5">
+                <div class="text-center mb-4">
+                    <div class="mb-3">
+                        <span class="display-6 fw-bold text-primary">RATP</span>
+                    </div>
+                    <h5 class="text-muted fw-light">Plateforme de gestion des signalements</h5>
+                </div>
+
+                {% if error %}
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        {{ error.messageKey|trans(error.messageData, 'security') }}
+                    </div>
+                {% endif %}
+
+                <form method="post" action="{{ path('app_login') }}">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Adresse e-mail</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                            <input type="email" id="email" name="email"
+                                   class="form-control" autocomplete="email" autofocus
+                                   value="{{ last_username }}" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="password" class="form-label">Mot de passe</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                            <input type="password" id="password" name="password"
+                                   class="form-control" autocomplete="current-password" required>
+                        </div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Se connecter
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <p class="text-center text-muted small mt-3">
+            Usage interne RATP — Accès restreint
+        </p>
+        {% if app.debug %}
+        <p class="text-center small mt-2">
+            <a href="{{ path('app_public_demo') }}" class="text-muted text-decoration-none small">
+                <i class="bi bi-bug me-1"></i>Parcours de démo (dev uniquement)
+            </a>
+        </p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

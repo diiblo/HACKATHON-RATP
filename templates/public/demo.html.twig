@@ -1,0 +1,101 @@
+{% extends 'public/layout.html.twig' %}
+
+{% block title %}Démo Hackathon — RATP{% endblock %}
+{% block header_subtitle %}Parcours de démonstration guidé{% endblock %}
+
+{% block body %}
+<div class="alert alert-dark">
+    <strong>Objectif.</strong> Cette page montre un parcours credibile de bout en bout : collecte client, pre-tri IA reel, qualification manager, alerte, courrier et suivi RH.
+</div>
+
+<div class="card mb-4 border-0">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="small text-uppercase text-muted mb-1">IA visible tout de suite</div>
+                <div class="fw-semibold">Chaque nouveau dossier peut etre pre-qualifie automatiquement des sa creation, y compris apres note vocale</div>
+            </div>
+            <div class="col-md-4">
+                <div class="small text-uppercase text-muted mb-1">Aide a la decision</div>
+                <div class="fw-semibold">Resume, priorite, statut suggere, alerte et brouillon de courrier</div>
+            </div>
+            <div class="col-md-4">
+                <div class="small text-uppercase text-muted mb-1">Resilience</div>
+                <div class="fw-semibold">Fallback automatique entre OpenRouter, Gemini et Ollama Cloud</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header"><h6 class="mb-0">Parcours conseillé pour la démo</h6></div>
+    <div class="card-body">
+        <ol class="mb-0">
+            <li>Créer un signalement depuis le formulaire public ou l'accès QR.</li>
+            <li>Montrer la confirmation puis ouvrir le dossier côté manager.</li>
+            <li>Afficher le bloc <strong>Pré-tri IA automatique</strong> sur le dossier.</li>
+            <li>Lancer ensuite l'analyse IA complète, l'alerte et le brouillon de courrier.</li>
+            <li>Terminer côté RH avec validation et suivi courrier.</li>
+        </ol>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header"><h5 class="mb-0">Comptes de démo</h5></div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead><tr><th>Rôle</th><th>Email</th><th>Mot de passe</th></tr></thead>
+                <tbody>
+                {% for account in accounts %}
+                    <tr>
+                        <td>{{ account.role }}</td>
+                        <td><code>{{ account.email }}</code></td>
+                        <td><code>{{ account.password }}</code></td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header"><h6 class="mb-0">1. Entrée terrain</h6></div>
+            <div class="card-body">
+                <p class="small text-muted">Scanner un QR pour ouvrir un formulaire deja contextualise, puis decrire librement la situation avec texte ou note vocale.</p>
+                <a href="{{ path('app_public_quick_access') }}" class="btn btn-primary btn-sm">Ouvrir l'accès rapide QR</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header"><h6 class="mb-0">2. Réseaux sociaux</h6></div>
+            <div class="card-body">
+                <p class="small text-muted">Tester aussi le parcours social pour montrer qu un autre canal alimente le meme moteur de qualification.</p>
+                <a href="/social/inbox" class="btn btn-outline-primary btn-sm">Ouvrir l'inbox sociale</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header"><h6 class="mb-0">3. Traitement interne</h6></div>
+            <div class="card-body">
+                <p class="small text-muted">Ouvrir ensuite le dossier pour voir le pre-tri IA, lancer l analyse complete, puis suivre la recommandation.</p>
+                <a href="/" class="btn btn-outline-primary btn-sm">Ouvrir le dashboard</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header"><h6 class="mb-0">4. Validation / courrier</h6></div>
+            <div class="card-body">
+                <p class="small text-muted">Generer un brouillon IA, demander validation RH, puis lancer le suivi courrier.</p>
+                <a href="/signalement/" class="btn btn-outline-primary btn-sm">Accéder aux dossiers</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

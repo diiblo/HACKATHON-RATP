@@ -1,0 +1,447 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Signalement — {{ signalement.titre }}{% endblock %}
+
+{% block body %}
+{# Breadcrumb + header #}
+<div class="mb-3">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('app_signalement_index') }}">Signalements</a></li>
+            <li class="breadcrumb-item active">{{ signalement.titre|u.truncate(40, '…') }}</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-3">
+    <div>
+        <h1 class="h3 mb-1">{{ signalement.titre }}</h1>
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+            {% if signalement.type == 'incident' %}
+                <span class="badge bg-danger fs-6"><i class="bi bi-flag-fill me-1"></i>Incident</span>
+            {% else %}
+                <span class="badge bg-success fs-6"><i class="bi bi-hand-thumbs-up-fill me-1"></i>Avis positif</span>
+            {% endif %}
+            {% if signalement.gravite %}
+                <span class="badge {{ signalement.graviteBadge }} fs-6">{{ signalement.gravite|capitalize }}</span>
+            {% endif %}
+            <span class="badge {{ signalement.statutBadge }} fs-6">{{ signalement.statutLabel }}</span>
+            <span class="text-muted small">Canal : {{ signalement.canalLabel }}</span>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        {% if is_granted('ROLE_MANAGER') %}
+        <form method="post" action="{{ path('app_signalement_ai_analysis', {id: signalement.id}) }}" data-turbo="false">
+            <input type="hidden" name="_token" value="{{ csrf_token('ai-analysis-' ~ signalement.id) }}">
+            <button type="submit" class="btn btn-outline-dark btn-sm">
+                <i class="bi bi-stars me-1"></i>Analyse IA
+            </button>
+        </form>
+        {% endif %}
+        {% if signalement.statut in ['nouveau', 'qualification'] or is_granted('ROLE_ADMIN') %}
+        <a href="{{ path('app_signalement_edit', {id: signalement.id}) }}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-pencil me-1"></i>Modifier
+        </a>
+        {% endif %}
+        {% if is_granted('ROLE_ADMIN') %}
+        <form method="post" action="{{ path('app_signalement_delete', {id: signalement.id}) }}"
+              onsubmit="return confirm('Supprimer définitivement ce signalement ?')" data-turbo="false">
+            <input type="hidden" name="_token" value="{{ csrf_token('delete-signalement-' ~ signalement.id) }}">
+            <button type="submit" class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-trash me-1"></i>Supprimer
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+{# Alerte fenêtre vidéo 24h — en haut de page pour visibilité maximale #}
+{% if signalement.type == 'incident' and not signalement.hasComplaintProof and not signalement.videoEvidenceExpired %}
+<div class="alert {{ signalement.videoEvidenceUrgent ? 'alert-warning' : 'alert-info' }} d-flex align-items-center gap-2 mb-4">
+    <i class="bi bi-camera-video fs-5"></i>
+    <div>
+        <strong>Fenêtre vidéo : {{ signalement.videoHoursRemaining }} heure(s) restantes</strong>
+        avant l'échéance simulée de conservation des images. Pensez à sécuriser les enregistrements si nécessaire.
+    </div>
+</div>
+{% endif %}
+
+<div class="row g-4">
+    {# Colonne principale #}
+    <div class="col-md-8">
+
+        {# Faits #}
+        <div class="card mb-4">
+            <div class="card-header"><h5 class="mb-0"><i class="bi bi-file-text me-2"></i>Description des faits</h5></div>
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Date des faits</div>
+                        <div class="fw-medium">{{ signalement.dateFait|date('d/m/Y') }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Créé le</div>
+                        <div class="fw-medium">{{ signalement.createdAt|date('d/m/Y à H:i') }}</div>
+                    </div>
+                    {% if signalement.updatedAt %}
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Dernière modification</div>
+                        <div>{{ signalement.updatedAt|date('d/m/Y à H:i') }}</div>
+                    </div>
+                    {% endif %}
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Créé par</div>
+                        <div>{{ signalement.createdBy.fullName }}</div>
+                    </div>
+                </div>
+                <hr>
+                <div style="white-space: pre-wrap;">{{ signalement.description }}</div>
+                {% if signalement.translatedDescription and signalement.translatedDescription != signalement.description %}
+                <hr>
+                <div class="small text-muted fw-semibold mb-2">Version française simulée</div>
+                <div class="alert alert-light border mb-0" style="white-space: pre-wrap;">{{ signalement.translatedDescription }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if signalement.voiceTranscript %}
+        <div class="card mb-4">
+            <div class="card-header"><h5 class="mb-0"><i class="bi bi-mic me-2"></i>Note vocale simulée</h5></div>
+            <div class="card-body">
+                <div class="d-flex gap-2 align-items-center flex-wrap mb-2">
+                    <div class="text-muted small">Langue détectée : {{ signalement.sourceLanguage|upper }}</div>
+                    {% if signalement.voiceTranscript starts with 'Transcription simulée' %}
+                        <span class="badge bg-secondary">Traitement vocal de repli</span>
+                    {% else %}
+                        <span class="badge bg-primary">Traitement vocal IA réel</span>
+                    {% endif %}
+                </div>
+                <div style="white-space: pre-wrap;">{{ signalement.voiceTranscript }}</div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if preTriageComment %}
+        <div class="card mb-4 border-primary">
+            <div class="card-header bg-primary-subtle border-0">
+                <h5 class="mb-0"><i class="bi bi-stars me-2"></i>Pré-tri IA automatique</h5>
+            </div>
+            <div class="card-body">
+                <div class="small text-muted mb-2">Généré automatiquement à la réception du dossier.</div>
+                <div style="white-space: pre-wrap;">{{ preTriageComment.contenu }}</div>
+            </div>
+        </div>
+        {% endif %}
+
+        {# Commentaires #}
+        <div class="card mb-4">
+            <div class="card-header"><h5 class="mb-0"><i class="bi bi-chat-left-text me-2"></i>Commentaires ({{ signalement.commentaires|length }})</h5></div>
+            <div class="card-body">
+                {% if signalement.commentaires|length == 0 %}
+                    <p class="text-muted small mb-3">Aucun commentaire pour l'instant.</p>
+                {% else %}
+                    {% for c in signalement.commentaires %}
+                    <div class="d-flex gap-3 mb-3">
+                        <div class="flex-shrink-0">
+                            <span class="badge bg-primary rounded-circle p-2">
+                                {{ c.user.prenom|first|upper }}{{ c.user.nom|first|upper }}
+                            </span>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between">
+                                <strong>{{ c.user.fullName }}</strong>
+                                <span class="text-muted small">{{ c.createdAt|date('d/m/Y H:i') }}</span>
+                            </div>
+                            <p class="mb-0 mt-1" style="white-space: pre-wrap;">{{ c.contenu }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    <hr>
+                {% endif %}
+
+                {# Formulaire commentaire #}
+                {{ form_start(commentForm, {action: path('app_commentaire_add', {id: signalement.id}), attr: {'data-turbo': 'false'}}) }}
+                <div class="d-flex gap-2">
+                    <div class="flex-grow-1">
+                        {{ form_widget(commentForm.contenu) }}
+                        {{ form_errors(commentForm.contenu) }}
+                    </div>
+                    <div>
+                        <button type="submit" class="btn btn-primary h-100">
+                            <i class="bi bi-send"></i>
+                        </button>
+                    </div>
+                </div>
+                {{ form_end(commentForm) }}
+            </div>
+        </div>
+
+        {# Pièces jointes #}
+        {% set piecesJointes = signalement.piecesJointes %}
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-paperclip me-2"></i>Documents joints
+                    <span class="badge bg-secondary ms-1">{{ piecesJointes|length }}</span>
+                    <span class="badge bg-info text-dark ms-1 fw-normal small">Simulation SharePoint</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if piecesJointes|length == 0 %}
+                    <p class="text-muted small mb-0">Aucune pièce jointe.</p>
+                {% else %}
+                <ul class="list-group list-group-flush">
+                    {% for pj in piecesJointes %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi {{ pj.iconClass }} fs-5"></i>
+                            <div>
+                                <div class="fw-medium small">{{ pj.originalName }}</div>
+                                <div class="text-muted small">
+                                    {{ pj.sizeFormatted }} · {{ pj.uploadedAt|date('d/m/Y H:i') }}
+                                    {% if pj.uploadedBy %} · {{ pj.uploadedBy.fullName }}{% else %} · Public{% endif %}
+                                    · {{ pj.visibilityLabel }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-1">
+                            <a href="{{ path('app_piece_jointe_download', {id: pj.id}) }}"
+                               class="btn btn-sm btn-outline-primary" target="_blank">
+                                <i class="bi bi-download"></i>
+                            </a>
+                            {% if is_granted('ROLE_MANAGER') %}
+                            <form method="post"
+                                  action="{{ path('app_piece_jointe_delete', {id: pj.id}) }}"
+                                  onsubmit="return confirm('Supprimer cette pièce jointe ?')"
+                                  data-turbo="false">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    {# Colonne latérale #}
+    <div class="col-md-4">
+
+        {# Agent #}
+        <div class="card mb-3">
+            <div class="card-header"><h6 class="mb-0"><i class="bi bi-person me-2"></i>Agent concerné</h6></div>
+            <div class="card-body">
+                {% if signalement.agent %}
+                    <h6 class="mb-1">
+                        <a href="{{ path('app_agent_show', {id: signalement.agent.id}) }}" class="text-decoration-none">
+                            {{ signalement.agent.fullName }}
+                        </a>
+                    </h6>
+                    <div class="text-muted small">
+                        <div><code>{{ signalement.agent.matricule }}</code></div>
+                        {% if signalement.agent.centre %}<div>{{ signalement.agent.centre }}</div>{% endif %}
+                    </div>
+                    <div class="mt-2">
+                        <span class="badge {{ scoreCalc.getBadgeClass(score) }}">
+                            Niveau {{ score }}/4 — {{ scoreCalc.getLevelLabel(score) }}
+                        </span>
+                    </div>
+                {% else %}
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge bg-warning text-dark">À identifier</span>
+                        <span class="text-muted small">Signalement public</span>
+                    </div>
+                    {% if signalement.agentDescription %}
+                    <div class="text-muted small fst-italic">
+                        <strong>Description fournie :</strong><br>{{ signalement.agentDescription }}
+                    </div>
+                    {% endif %}
+                    {% if is_granted('ROLE_MANAGER') %}
+                    <div class="mt-2">
+                        <a href="{{ path('app_signalement_edit', {id: signalement.id}) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-person-check me-1"></i>Identifier l'agent
+                        </a>
+                    </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+
+        {% if signalement.plainantNom or signalement.plainantEmail or signalement.plainantTelephone %}
+        <div class="card mb-3">
+            <div class="card-header"><h6 class="mb-0"><i class="bi bi-person-lines-fill me-2"></i>Contact plaignant</h6></div>
+            <div class="card-body small">
+                {% if signalement.plainantNom %}
+                <div class="mb-1"><i class="bi bi-person me-1 text-muted"></i>{{ signalement.plainantNom }}</div>
+                {% endif %}
+                {% if signalement.plainantEmail %}
+                <div class="mb-1"><i class="bi bi-envelope me-1 text-muted"></i>
+                    <a href="mailto:{{ signalement.plainantEmail }}">{{ signalement.plainantEmail }}</a>
+                </div>
+                {% endif %}
+                {% if signalement.plainantTelephone %}
+                <div><i class="bi bi-telephone me-1 text-muted"></i>{{ signalement.plainantTelephone }}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if signalement.sourceContextLabel or signalement.sourcePlatform or signalement.sourceEntryMode %}
+        <div class="card mb-3">
+            <div class="card-header"><h6 class="mb-0"><i class="bi bi-geo-alt me-2"></i>Contexte source</h6></div>
+            <div class="card-body small">
+                {% if signalement.sourceContextLabel %}<div>{{ signalement.sourceContextLabel }}</div>{% endif %}
+                {% if signalement.sourcePlatform %}<div>Plateforme : {{ signalement.sourcePlatform }}</div>{% endif %}
+                {% if signalement.sourceEntryMode %}<div>Entrée : {{ signalement.sourceEntryMode }}</div>{% endif %}
+                {% if signalement.sourceLanguage %}<div>Langue source : {{ signalement.sourceLanguage|upper }}</div>{% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <hr class="my-3">
+
+        {% if signalement.type == 'incident' %}
+        <div class="card mb-3">
+            <div class="card-header"><h6 class="mb-0"><i class="bi bi-shield-check me-2"></i>Conservation vidéo</h6></div>
+            <div class="card-body">
+                {% if signalement.hasComplaintProof %}
+                    <div class="alert alert-success small mb-2">
+                        Preuve enregistrée le {{ signalement.plainteDeposeeAt|date('d/m/Y H:i') }}.
+                    </div>
+                    {% if signalement.plainteCommentaire %}
+                    <div class="small text-muted mb-0">{{ signalement.plainteCommentaire }}</div>
+                    {% endif %}
+                {% elseif signalement.videoEvidenceExpired %}
+                    <div class="alert alert-danger small mb-0">
+                        Fenêtre de 24h expirée.
+                    </div>
+                {% else %}
+                    <form method="post" action="{{ path('app_signalement_complaint_proof', {id: signalement.id}) }}" enctype="multipart/form-data" data-turbo="false">
+                        <input type="hidden" name="_token" value="{{ csrf_token('complaint-proof-' ~ signalement.id) }}">
+                        <div class="mb-2">
+                            <input type="file" name="plainte_proof" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required>
+                        </div>
+                        <div class="mb-2">
+                            <textarea name="plainte_commentaire" class="form-control form-control-sm" rows="2" placeholder="Référence de plainte, contexte, agent notifié..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-outline-primary w-100">
+                            <i class="bi bi-shield-check me-1"></i>Déposer la preuve de plainte
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {# Transitions de statut #}
+        {% if allowedTransitions|length > 0 %}
+        <div class="card mb-3">
+            <div class="card-header"><h6 class="mb-0"><i class="bi bi-arrow-right-circle me-2"></i>Changer le statut</h6></div>
+            <div class="card-body">
+                {% for targetStatut in allowedTransitions %}
+                <form method="post"
+                      action="{{ path('app_signalement_transition', {id: signalement.id, statut: targetStatut}) }}"
+                      class="mb-2" data-turbo="false">
+                    <input type="hidden" name="_token" value="{{ csrf_token('transition-' ~ signalement.id) }}">
+                    <div class="input-group input-group-sm">
+                        <input type="text" name="commentaire_transition" class="form-control"
+                               placeholder="Note optionnelle...">
+                        <button type="submit" class="btn {{ workflow.getTransitionBtnClass(targetStatut) }}">
+                            → {{ targetStatut == 'validation' ? 'Envoyer au service RH' : workflow.getTransitionLabel(targetStatut) }}
+                        </button>
+                    </div>
+                </form>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {# Courrier #}
+        <div class="card mb-3">
+            <div class="card-header"><h6 class="mb-0"><i class="bi bi-envelope me-2"></i>Courrier</h6></div>
+            <div class="card-body">
+                {% if not hasAiConfig %}
+                    <div class="alert alert-light border small py-2">
+                        Aucune configuration IA active par défaut.
+                        {% if is_granted('ROLE_DEV') %}
+                            <a href="{{ path('app_admin_ai_configs') }}" class="alert-link">Configurer l'intégration IA</a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+                {% set courrier = signalement.latestCourrier %}
+                {% if courrier %}
+                    <div class="mb-2">
+                        <span class="badge {{ courrier.statutBadge }}">{{ courrier.statutLabel }}</span>
+                        {% if courrier.dispatchStatus %}
+                        <span class="badge {{ courrier.dispatchStatusBadge }} ms-1">{{ courrier.dispatchStatusLabel }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="d-grid gap-2">
+                        <a href="{{ path('app_courrier_show', {id: courrier.id}) }}" class="btn btn-sm btn-outline-primary w-100">
+                            <i class="bi bi-eye me-1"></i>Voir le courrier
+                        </a>
+                        {% if is_granted('ROLE_MANAGER') and courrier.statut in ['brouillon', 'refuse'] %}
+                        <form method="post"
+                              action="{{ path('app_courrier_request_validation', {id: courrier.id}) }}"
+                              data-turbo="false">
+                            <input type="hidden" name="_token" value="{{ csrf_token('courrier-action-' ~ courrier.id) }}">
+                            <button type="submit" class="btn btn-sm btn-warning w-100">
+                                <i class="bi bi-send-check me-1"></i>Envoyer au service RH
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <p class="text-muted small mb-2">Aucun courrier généré.</p>
+                    <div class="d-grid gap-2">
+                        {% if hasAiConfig %}
+                        <form method="post"
+                              action="{{ path('app_courrier_generate', {signalementId: signalement.id}) }}"
+                              data-turbo="false">
+                            <input type="hidden" name="mode" value="ai">
+                            <button type="submit" class="btn btn-sm btn-dark w-100">
+                                <i class="bi bi-stars me-1"></i>Générer un brouillon IA
+                            </button>
+                        </form>
+                        {% endif %}
+                        <form method="post"
+                              action="{{ path('app_courrier_generate', {signalementId: signalement.id}) }}"
+                              data-turbo="false">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary w-100">
+                                <i class="bi bi-file-earmark-text me-1"></i>Générer un brouillon standard
+                            </button>
+                        </form>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Timeline #}
+        <div class="card">
+            <div class="card-header"><h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Historique</h6></div>
+            <div class="card-body">
+                <div class="timeline">
+                    {% for h in signalement.historique %}
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="small">
+                            <div class="fw-medium">{{ h.label }}</div>
+                            <div class="text-muted">{{ h.createdAt|date('d/m/Y H:i') }} — {{ h.user.fullName }}</div>
+                            {% if h.commentaire %}
+                            <div class="text-muted fst-italic mt-1">{{ h.commentaire }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

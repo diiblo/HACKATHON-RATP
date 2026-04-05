@@ -1,0 +1,110 @@
+{% extends 'public/layout.html.twig' %}
+
+{% block title %}Signalement — RATP{% endblock %}
+{% block header_subtitle %}Décrire une situation vécue sur le réseau{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .type-card {
+            cursor: pointer;
+            border: 2px solid #dee2e6;
+            border-radius: 16px;
+            transition: border-color .15s, transform .15s, box-shadow .15s;
+            user-select: none;
+            background: #fff;
+        }
+        .type-card:hover {
+            border-color: #003189;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,.1);
+        }
+        .type-card.selected { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,.12); }
+        .type-card--incident.selected { border-color: #dc3545; background: #fff5f5; }
+        .type-card--positif.selected  { border-color: #198754; background: #f0fff4; }
+        #step-content { animation: fadeIn .3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="mb-4">
+    <div class="alert alert-light border d-flex gap-3 align-items-start">
+        <i class="bi bi-info-circle-fill fs-4 flex-shrink-0 mt-1"></i>
+        <div>
+            <strong>Expliquez simplement ce que vous avez observé.</strong><br>
+            Nos équipes qualifient ensuite le dossier automatiquement puis humainement. Vous pouvez joindre un document ou une note vocale si cela aide.
+        </div>
+    </div>
+    {% if prefillContext.hasContext %}
+    <div class="alert alert-light border mt-3">
+        <strong>Contexte détecté</strong>
+        {% if prefillContext.line %} · Ligne {{ prefillContext.line }}{% endif %}
+        {% if prefillContext.vehicle %} · Véhicule {{ prefillContext.vehicle }}{% endif %}
+        {% if prefillContext.stop %} · Arrêt {{ prefillContext.stop }}{% endif %}
+        {% if prefillContext.occurredAt %} · {{ prefillContext.occurredAt|date('d/m/Y H:i') }}{% endif %}
+        <div class="small text-muted mt-1">Ces informations ont été récupérées automatiquement pour vous éviter une saisie manuelle.</div>
+    </div>
+    {% endif %}
+</div>
+
+{{ form_start(form, {attr: {novalidate: 'novalidate', enctype: 'multipart/form-data'}}) }}
+{% include 'public/_form_steps.html.twig' with {
+    form: form,
+    labelDescription: 'Que s\'est-il passé ?',
+    submitLabel: 'Envoyer mon signalement',
+    prefillContext: prefillContext
+} %}
+{{ form_end(form) }}
+
+<p class="text-muted small text-center mt-3">
+    <i class="bi bi-shield-lock me-1"></i>
+    Canal identifié automatiquement : <strong>Formulaire web</strong> — vos données sont traitées de façon confidentielle.
+</p>
+<p class="text-muted small text-center">
+    <i class="bi bi-qr-code-scan me-1"></i>
+    Vous pouvez aussi utiliser l'<a href="{{ path('app_public_quick_access') }}">accès rapide QR</a> si vous êtes sur un parcours terrain.
+</p>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+(function () {
+    const cards = document.querySelectorAll('.type-card');
+    const typeInput = document.getElementById('{{ form.type.vars.id }}');
+    const stepContent = document.getElementById('step-content');
+    const typeError = document.getElementById('type-error');
+
+    function selectType(card) {
+        cards.forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        typeInput.value = card.dataset.type;
+        typeError.classList.add('d-none');
+        if (stepContent.classList.contains('d-none')) {
+            stepContent.classList.remove('d-none');
+            setTimeout(() => stepContent.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+        }
+    }
+
+    cards.forEach(card => {
+        card.addEventListener('click', () => selectType(card));
+        card.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectType(card); }
+        });
+    });
+
+    document.querySelector('form').addEventListener('submit', function (e) {
+        if (!typeInput.value) {
+            e.preventDefault();
+            typeError.classList.remove('d-none');
+            document.getElementById('step-type').scrollIntoView({ behavior: 'smooth' });
+        }
+    });
+
+    if (typeInput.value) {
+        cards.forEach(c => { if (c.dataset.type === typeInput.value) c.classList.add('selected'); });
+        stepContent.classList.remove('d-none');
+    }
+})();
+</script>
+{% endblock %}

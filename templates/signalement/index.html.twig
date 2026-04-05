@@ -1,0 +1,175 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Signalements — RATP{% endblock %}
+
+{% block body %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0"><i class="bi bi-flag me-2 text-primary"></i>Signalements</h1>
+    {% if is_granted('ROLE_ADMIN') %}
+    <a href="{{ path('app_signalement_new') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-plus-circle me-1"></i>Saisie manuelle (admin)
+    </a>
+    {% endif %}
+</div>
+
+{# Filtres #}
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Recherche</label>
+                <input type="text" name="q" class="form-control form-control-sm"
+                       placeholder="Titre ou description..." value="{{ filters.q ?? '' }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Statut</label>
+                <select name="statut" class="form-select form-select-sm">
+                    <option value="">Tous les statuts</option>
+                    {% for val, label in statuts %}
+                        <option value="{{ val }}" {{ filters.statut is defined and filters.statut == val ? 'selected' : '' }}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Type</label>
+                <select name="type" class="form-select form-select-sm">
+                    <option value="">Tous les types</option>
+                    {% for val, label in types %}
+                        <option value="{{ val }}" {{ filters.type is defined and filters.type == val ? 'selected' : '' }}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Gravité</label>
+                <select name="gravite" class="form-select form-select-sm">
+                    <option value="">Toutes</option>
+                    {% for val, label in gravites %}
+                        <option value="{{ val }}" {{ filters.gravite is defined and filters.gravite == val ? 'selected' : '' }}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Centre</label>
+                <input type="text" name="centre" class="form-control form-control-sm"
+                       placeholder="Centre..." value="{{ filters.centre ?? '' }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Date début</label>
+                <input type="date" name="date_from" class="form-control form-control-sm" value="{{ filters.date_from ?? '' }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Date fin</label>
+                <input type="date" name="date_to" class="form-control form-control-sm" value="{{ filters.date_to ?? '' }}">
+            </div>
+            <div class="col-md-1 d-flex gap-2">
+                <button type="submit" class="btn btn-primary btn-sm flex-grow-1">
+                    <i class="bi bi-funnel"></i> Filtrer
+                </button>
+                <a href="{{ path('app_signalement_index') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-x"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# Liste #}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>
+            <strong>{{ pagination.totalItems }}</strong> signalement(s)
+            {% if pagination.totalItems > 0 %}
+                <span class="text-muted small ms-2">Page {{ pagination.currentPage }}/{{ pagination.totalPages }}</span>
+            {% endif %}
+        </span>
+    </div>
+    <div class="card-body p-0">
+        {% if signalements|length == 0 %}
+            <p class="text-muted text-center py-4 mb-0">
+                <i class="bi bi-search me-2"></i>Aucun résultat pour les filtres sélectionnés.
+            </p>
+        {% else %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date faits</th>
+                        <th>Agent</th>
+                        <th>Titre</th>
+                        <th>Type</th>
+                        <th>Gravité</th>
+                        <th>Canal</th>
+                        <th>Statut</th>
+                        <th>Créé le</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in signalements %}
+                    <tr>
+                        <td class="small text-muted">{{ s.dateFait|date('d/m/Y') }}</td>
+                        <td>
+                            {% if s.agent %}
+                                <a href="{{ path('app_agent_show', {id: s.agent.id}) }}" class="text-decoration-none">
+                                    {{ s.agent.fullName }}
+                                </a>
+                                <div class="text-muted small">{{ s.agent.centre ?? '' }}</div>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">À identifier</span>
+                                {% if s.agentDescription %}
+                                <div class="text-muted small">{{ s.agentDescription|u.truncate(25, '…') }}</div>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>{{ s.titre|u.truncate(40, '…') }}</td>
+                        <td>
+                            {% if s.type == 'incident' %}
+                                <span class="badge bg-danger">Incident</span>
+                            {% else %}
+                                <span class="badge bg-success">Positif</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if s.gravite %}
+                                <span class="badge {{ s.graviteBadge }}">{{ s.gravite|capitalize }}</span>
+                            {% else %}<span class="text-muted">—</span>{% endif %}
+                        </td>
+                        <td><span class="text-muted small">{{ s.canalLabel }}</span></td>
+                        <td>
+                            <span class="badge {{ s.statutBadge }}">{{ s.statutLabel }}</span>
+                        </td>
+                        <td class="small text-muted">{{ s.createdAt|date('d/m/Y') }}</td>
+                        <td>
+                            <a href="{{ path('app_signalement_show', {id: s.id}) }}"
+                               class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+    {% if pagination.totalPages > 1 %}
+        <div class="card-footer bg-white">
+            <nav aria-label="Pagination des signalements">
+                <ul class="pagination pagination-sm justify-content-center mb-0">
+                    <li class="page-item {{ pagination.currentPage <= 1 ? 'disabled' : '' }}">
+                        <a class="page-link" href="{{ path('app_signalement_index', queryParams|merge({page: pagination.currentPage - 1})) }}">Précédent</a>
+                    </li>
+                    {% for pageNumber in 1..pagination.totalPages %}
+                        <li class="page-item {{ pageNumber == pagination.currentPage ? 'active' : '' }}">
+                            <a class="page-link" href="{{ path('app_signalement_index', queryParams|merge({page: pageNumber})) }}">{{ pageNumber }}</a>
+                        </li>
+                    {% endfor %}
+                    <li class="page-item {{ pagination.currentPage >= pagination.totalPages ? 'disabled' : '' }}">
+                        <a class="page-link" href="{{ path('app_signalement_index', queryParams|merge({page: pagination.currentPage + 1})) }}">Suivant</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

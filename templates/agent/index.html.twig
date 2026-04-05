@@ -1,0 +1,119 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Agents — RATP{% endblock %}
+
+{% block body %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0"><i class="bi bi-people me-2 text-primary"></i>Agents</h1>
+    {% if is_granted('ROLE_MANAGER') %}
+    <a href="{{ path('app_agent_new') }}" class="btn btn-primary">
+        <i class="bi bi-person-plus me-1"></i> Nouvel agent
+    </a>
+    {% endif %}
+</div>
+
+{% if is_granted('ROLE_MANAGER') %}
+<div class="card mb-4">
+    <div class="card-header"><h6 class="mb-0"><i class="bi bi-upload me-2"></i>Import CSV agents RH</h6></div>
+    <div class="card-body">
+        {{ form_start(importForm, {attr: {'data-turbo': 'false'}}) }}
+        <div class="row g-3 align-items-end">
+            <div class="col-md-8">{{ form_row(importForm.csvFile) }}</div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-outline-primary w-100">
+                    <i class="bi bi-file-earmark-arrow-up me-1"></i>Importer
+                </button>
+            </div>
+        </div>
+        {{ form_end(importForm) }}
+        <p class="text-muted small mt-3 mb-0">Colonnes attendues : `matricule`, `nom`, `prenom`, `centre`, `date_naissance`, `actif`.</p>
+    </div>
+</div>
+{% endif %}
+
+<div class="card mb-3">
+    <div class="card-body py-2 px-3">
+        <div class="input-group input-group-sm" style="max-width: 320px;">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" id="agentFilter" class="form-control"
+                   placeholder="Filtrer par nom, matricule, centre..." autocomplete="off">
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        {% if agentsWithScores|length == 0 %}
+            <p class="text-muted text-center py-4">Aucun agent enregistré.</p>
+        {% else %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" id="agentTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>Matricule</th>
+                        <th>Nom</th>
+                        <th>Centre</th>
+                        <th>Score d'attention</th>
+                        <th>Niveau</th>
+                        <th>Statut</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in agentsWithScores %}
+                    {% set agent = item.agent %}
+                    {% set score = item.score %}
+                    <tr>
+                        <td><code>{{ agent.matricule }}</code></td>
+                        <td>
+                            <a href="{{ path('app_agent_show', {id: agent.id}) }}" class="text-decoration-none fw-medium">
+                                {{ agent.fullName }}
+                            </a>
+                        </td>
+                        <td>{{ agent.centre ?? '—' }}</td>
+                        <td>
+                            <span class="badge {{ scoreCalc.getBadgeClass(score) }} fs-6">{{ score }}/4</span>
+                        </td>
+                        <td>
+                            <span class="badge {{ scoreCalc.getBadgeClass(score) }}">
+                                {{ scoreCalc.getLevelLabel(score) }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if agent.actif %}
+                                <span class="badge bg-success">Actif</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inactif</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ path('app_agent_show', {id: agent.id}) }}" class="btn btn-sm btn-outline-secondary me-1">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            {% if is_granted('ROLE_MANAGER') %}
+                            <a href="{{ path('app_agent_edit', {id: agent.id}) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+document.getElementById('agentFilter').addEventListener('input', function () {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('#agentTable tbody tr').forEach(function (row) {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(q) ? '' : 'none';
+    });
+});
+</script>
+{% endblock %}

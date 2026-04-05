@@ -1,0 +1,133 @@
+{#
+    Partial partagé par les 4 formulaires publics.
+    Variables attendues :
+      - form          : FormView
+      - labelDescription : string  (label du champ description)
+      - submitLabel   : string  (texte du bouton)
+      - prefillContext : array (pour le terrain)
+#}
+
+{# ── Étape 1 : choix du type ───────────────────────────────────────────────── #}
+<div id="step-type" class="mb-4">
+    <h2 class="h5 fw-semibold mb-3 text-center" style="color: var(--ratp-ink, #0f172a);">De quoi s'agit-il ?</h2>
+    <div class="row g-3">
+        <div class="col-sm-6">
+            <div class="type-card type-card--incident h-100 text-center p-4"
+                 data-type="incident" role="button" tabindex="0" aria-label="Signaler un problème">
+                <i class="bi bi-exclamation-triangle-fill text-danger mb-3 d-block" style="font-size: 3rem;"></i>
+                <h5 class="fw-bold mb-1">Signaler un problème</h5>
+                <p class="text-muted small mb-0">Incident, comportement problématique, situation à corriger</p>
+            </div>
+        </div>
+        <div class="col-sm-6">
+            <div class="type-card type-card--positif h-100 text-center p-4"
+                 data-type="positif" role="button" tabindex="0" aria-label="Partager un avis positif">
+                <i class="bi bi-hand-thumbs-up-fill text-success mb-3 d-block" style="font-size: 3rem;"></i>
+                <h5 class="fw-bold mb-1">Partager un avis positif</h5>
+                <p class="text-muted small mb-0">Agent exemplaire, service apprécié, comportement remarquable</p>
+            </div>
+        </div>
+    </div>
+    {# Input caché — valeur injectée par JS au clic sur une card #}
+    <div class="d-none">{{ form_widget(form.type) }}</div>
+    {{ form_errors(form.type) }}
+    <div id="type-error" class="text-danger small mt-2 d-none">
+        <i class="bi bi-exclamation-circle me-1"></i>Veuillez d'abord choisir un type de signalement.
+    </div>
+</div>
+
+{# ── Étape 2 : coordonnées + faits (masqués jusqu'au clic) ─────────────────── #}
+<div id="step-content" class="d-none">
+
+    {# Section coordonnées (optionnel) #}
+    <div class="mb-4 p-4 rounded-3 border" style="background: #f8faff;">
+        <h6 class="fw-semibold mb-1">
+            <i class="bi bi-person-lines-fill me-2 text-primary"></i>Vos coordonnées
+            <span class="badge bg-secondary fw-normal ms-1" style="font-size: .7rem;">Optionnel</span>
+        </h6>
+        <p class="text-muted small mb-3">
+            Pour vous recontacter si nécessaire. Ces informations restent strictement confidentielles et ne sont visibles que par les équipes RATP.
+        </p>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                    {{ form_widget(form.plainantNom) }}
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                    {{ form_widget(form.plainantEmail) }}
+                </div>
+                {{ form_errors(form.plainantEmail) }}
+            </div>
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+                    {{ form_widget(form.plainantTelephone) }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Section faits #}
+    <div class="card">
+        <div class="card-body p-4">
+            <h6 class="fw-semibold mb-4">
+                <i class="bi bi-file-text me-2 text-primary"></i>Les faits
+            </h6>
+
+            <div class="mb-3">
+                <label class="form-label fw-medium">Personne concernée</label>
+                {{ form_widget(form.agentDescription) }}
+                {{ form_errors(form.agentDescription) }}
+                <div class="form-text">{{ form_help(form.agentDescription) }}</div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-medium">{{ labelDescription }} <span class="text-danger">*</span></label>
+                {{ form_widget(form.description) }}
+                {{ form_errors(form.description) }}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-medium">Date des faits</label>
+                {{ form_widget(form.dateFait) }}
+                {{ form_errors(form.dateFait) }}
+                <div class="form-text">{{ form_help(form.dateFait) }}</div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-medium">
+                    <i class="bi bi-paperclip me-1"></i>Document ou photo
+                </label>
+                {{ form_widget(form.pieceJointe) }}
+                {{ form_errors(form.pieceJointe) }}
+                <div class="form-text">{{ form_help(form.pieceJointe) }}</div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-medium">
+                    <i class="bi bi-mic me-1"></i>Message vocal
+                </label>
+                {{ form_widget(form.noteVocale) }}
+                {{ form_errors(form.noteVocale) }}
+                {% include 'public/_voice_recorder.html.twig' with { input_id: form.noteVocale.vars.id } %}
+                <div class="form-text">{{ form_help(form.noteVocale) }}</div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-medium">Langue de la note vocale</label>
+                {{ form_widget(form.voiceLanguageHint) }}
+                {{ form_errors(form.voiceLanguageHint) }}
+            </div>
+
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-send me-2"></i>{{ submitLabel }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

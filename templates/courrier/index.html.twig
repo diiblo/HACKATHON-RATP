@@ -1,0 +1,93 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}File RH{% endblock %}
+
+{% macro render_table(courriers, emptyMessage, sectionTitle, badgeClass) %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">{{ sectionTitle }}</h5>
+        <span class="badge {{ badgeClass }}">{{ courriers|length }}</span>
+    </div>
+    <div class="card-body p-0">
+        {% if courriers is empty %}
+            <p class="text-muted small mb-0 p-3">{{ emptyMessage }}</p>
+        {% else %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Courrier</th>
+                            <th>Signalement</th>
+                            <th>Agent</th>
+                            <th>Créé le</th>
+                            <th>Statut</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for courrier in courriers %}
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">#{{ courrier.id }}</div>
+                                {% if courrier.validatedBy %}
+                                <div class="text-muted small">Validé par {{ courrier.validatedBy.fullName }}</div>
+                                {% else %}
+                                <div class="text-muted small">En attente d'action RH</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ path('app_signalement_show', {id: courrier.signalement.id}) }}" class="text-decoration-none">
+                                    {{ courrier.signalement.titre|u.truncate(55, '…') }}
+                                </a>
+                                <div class="text-muted small">Dossier #{{ courrier.signalement.id }}</div>
+                            </td>
+                            <td>
+                                {{ courrier.signalement.agentDisplayName }}
+                                {% if courrier.signalement.agent and courrier.signalement.agent.centre %}
+                                <div class="text-muted small">{{ courrier.signalement.agent.centre }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="text-muted small">{{ courrier.createdAt|date('d/m/Y H:i') }}</td>
+                            <td>
+                                <span class="badge {{ courrier.statutBadge }}">{{ courrier.statutLabel }}</span>
+                                {% if courrier.dispatchStatus %}
+                                <span class="badge {{ courrier.dispatchStatusBadge }} ms-1">{{ courrier.dispatchStatusLabel }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <a href="{{ path('app_courrier_show', {id: courrier.id}) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye me-1"></i>Voir
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endmacro %}
+
+{% import _self as macros %}
+
+{% block body %}
+<div class="mb-4">
+    <h1 class="h3 mb-1"><i class="bi bi-envelope-paper me-2 text-primary"></i>File RH</h1>
+    <p class="text-muted mb-0">Vue centralisée des courriers à valider et des courriers déjà validés.</p>
+</div>
+
+{{ macros.render_table(
+    courriersEnValidation,
+    'Aucun courrier à valider pour le moment.',
+    'À valider',
+    'bg-warning text-dark'
+) }}
+
+{{ macros.render_table(
+    courriersValides,
+    'Aucun courrier déjà validé à afficher.',
+    'Déjà validés',
+    'bg-success'
+) }}
+{% endblock %}

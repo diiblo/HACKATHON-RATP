@@ -1,0 +1,18 @@
+{% extends 'base.html.twig' %}
+{% block title %}Nouvel agent — RATP{% endblock %}
+{% block body %}
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('app_agent_index') }}">Agents</a></li>
+            <li class="breadcrumb-item active">Nouvel agent</li>
+        </ol>
+    </nav>
+    <h1 class="h3"><i class="bi bi-person-plus me-2 text-primary"></i>Nouvel agent</h1>
+</div>
+<div class="card">
+    <div class="card-body">
+        {% include 'agent/_form.html.twig' %}
+    </div>
+</div>
+{% endblock %}

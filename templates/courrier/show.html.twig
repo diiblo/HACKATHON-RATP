@@ -1,0 +1,143 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Courrier — {{ courrier.signalement.titre }}{% endblock %}
+
+{% block body %}
+<div class="mb-3">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('app_signalement_index') }}">Signalements</a></li>
+            <li class="breadcrumb-item">
+                <a href="{{ path('app_signalement_show', {id: courrier.signalement.id}) }}">
+                    {{ courrier.signalement.titre|u.truncate(30, '…') }}
+                </a>
+            </li>
+            <li class="breadcrumb-item active">Courrier</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h1 class="h3 mb-1">
+            <i class="bi bi-envelope me-2 text-primary"></i>Brouillon de courrier
+        </h1>
+        <div>
+            <span class="badge {{ courrier.statutBadge }} fs-6">{{ courrier.statutLabel }}</span>
+            <span class="text-muted small ms-2">Généré le {{ courrier.createdAt|date('d/m/Y à H:i') }}</span>
+        {% if courrier.validatedBy %}
+            <span class="text-muted small ms-2">— Validé par {{ courrier.validatedBy.fullName }}</span>
+            {% endif %}
+            {% if courrier.dispatchStatus %}
+            <span class="text-muted small ms-2">— Suivi remise : </span>
+            <span class="badge {{ courrier.dispatchStatusBadge }}">{{ courrier.dispatchStatusLabel }}</span>
+            {% endif %}
+        </div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        {% if courrier.isEditable %}
+        <a href="{{ path('app_courrier_edit', {id: courrier.id}) }}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-pencil me-1"></i>Modifier
+        </a>
+        {% endif %}
+
+        <a href="{{ path('app_courrier_pdf', {id: courrier.id}) }}" class="btn btn-outline-dark btn-sm">
+            <i class="bi bi-filetype-pdf me-1"></i>Exporter PDF
+        </a>
+
+        {% if is_granted('ROLE_MANAGER') and courrier.statut in ['brouillon', 'refuse'] %}
+        <form method="post" action="{{ path('app_courrier_request_validation', {id: courrier.id}) }}" data-turbo="false">
+            <input type="hidden" name="_token" value="{{ csrf_token('courrier-action-' ~ courrier.id) }}">
+            <button type="submit" class="btn btn-warning btn-sm">
+                <i class="bi bi-send-check me-1"></i>Envoyer au service RH
+            </button>
+        </form>
+        {% endif %}
+
+        {% if is_granted('ROLE_RH') and courrier.statut in ['en_validation', 'brouillon', 'refuse'] %}
+        <span class="border-start mx-1 d-none d-md-inline" style="height:28px"></span>
+        <form method="post" action="{{ path('app_courrier_validate', {id: courrier.id}) }}" data-turbo="false">
+            <input type="hidden" name="_token" value="{{ csrf_token('courrier-action-' ~ courrier.id) }}">
+            <button type="submit" class="btn btn-success btn-sm">
+                <i class="bi bi-check-circle me-1"></i>Valider
+            </button>
+        </form>
+        <form method="post" action="{{ path('app_courrier_refuse', {id: courrier.id}) }}" data-turbo="false">
+            <input type="hidden" name="_token" value="{{ csrf_token('courrier-action-' ~ courrier.id) }}">
+            <button type="submit" class="btn btn-outline-danger btn-sm"
+                    onclick="return confirm('Refuser ce courrier ?')">
+                <i class="bi bi-x-circle me-1"></i>Refuser
+            </button>
+        </form>
+        {% endif %}
+
+        {% if is_granted('ROLE_RH') and courrier.statut == 'valide' and not courrier.dispatchStatus %}
+        <span class="border-start mx-1 d-none d-md-inline" style="height:28px"></span>
+        <form method="post" action="{{ path('app_courrier_send', {id: courrier.id}) }}" data-turbo="false">
+            <input type="hidden" name="_token" value="{{ csrf_token('courrier-action-' ~ courrier.id) }}">
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i class="bi bi-envelope-check me-1"></i>Envoyer le courrier
+            </button>
+        </form>
+        {% endif %}
+
+        {% if is_granted('ROLE_RH') and courrier.dispatchStatus and courrier.dispatchStatus != 'receptionne' %}
+        <form method="post" action="{{ path('app_courrier_sync_delivery', {id: courrier.id}) }}" data-turbo="false">
+            <input type="hidden" name="_token" value="{{ csrf_token('courrier-action-' ~ courrier.id) }}">
+            <button type="submit" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-arrow-repeat me-1"></i>Rafraîchir le suivi d'envoi
+            </button>
+        </form>
+        {% endif %}
+
+        <a href="{{ path('app_signalement_show', {id: courrier.signalement.id}) }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Retour au dossier
+        </a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <pre class="mb-0 p-3 bg-light rounded" style="font-family: 'Courier New', monospace; font-size: 0.9rem; white-space: pre-wrap; word-wrap: break-word;">{{ courrier.contenu }}</pre>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-mailbox me-2"></i>Suivi d'envoi postal</h5>
+        {% if courrier.dispatchStatus %}
+        <span class="badge {{ courrier.dispatchStatusBadge }}">{{ courrier.dispatchStatusLabel }}</span>
+        {% else %}
+        <span class="badge bg-secondary">Non envoyé</span>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        {% if courrier.dispatchReference %}
+        <div class="mb-3 small text-muted">
+            Référence prestataire : <code>{{ courrier.dispatchReference }}</code>
+            {% if courrier.dispatchedAt %} · Envoi initial : {{ courrier.dispatchedAt|date('d/m/Y H:i') }}{% endif %}
+            {% if courrier.lastDispatchUpdateAt %} · Dernière synchro : {{ courrier.lastDispatchUpdateAt|date('d/m/Y H:i') }}{% endif %}
+        </div>
+        {% endif %}
+
+        {% if courrier.dispatchJournal is empty %}
+            <p class="text-muted small mb-0">
+                Aucun envoi effectué pour l’instant.
+            </p>
+        {% else %}
+            <div class="timeline">
+                {% for event in courrier.dispatchJournal|reverse %}
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="small">
+                        <div class="fw-medium">{{ event.label }}</div>
+                        <div class="text-muted">{{ event.at|date('d/m/Y H:i') }}</div>
+                        <div class="text-muted mt-1">{{ event.message }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

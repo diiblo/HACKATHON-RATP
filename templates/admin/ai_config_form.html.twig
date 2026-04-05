@@ -1,0 +1,68 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ config ? 'Modifier la configuration IA' : 'Nouvelle configuration IA' }}{% endblock %}
+
+{% block body %}
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('app_admin_ai_configs') }}">IA</a></li>
+            <li class="breadcrumb-item active">{{ config ? config.name : 'Nouvelle configuration' }}</li>
+        </ol>
+    </nav>
+    <h1 class="h3"><i class="bi bi-cpu me-2 text-primary"></i>{{ config ? 'Modifier la configuration IA' : 'Nouvelle configuration IA' }}</h1>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="alert alert-light border small">
+            Les modèles et paramètres sont modifiables ici sans changer les clés API.
+            Les clés locales peuvent être synchronisées depuis <code>.env.local</code> avec <code>ddev exec php bin/console app:ai:sync-real-providers</code>.
+        </div>
+        {{ form_start(form, {attr: {'data-turbo': 'false'}}) }}
+        <div class="row g-3">
+            <div class="col-md-6">{{ form_row(form.name) }}</div>
+            <div class="col-md-6">{{ form_row(form.vendorLabel) }}</div>
+            <div class="col-md-6">{{ form_row(form.providerType) }}</div>
+            <div class="col-md-6">{{ form_row(form.model) }}</div>
+            <div class="col-md-8">{{ form_row(form.apiBaseUrl) }}</div>
+            <div class="col-md-4">
+                {{ form_row(form.plainApiKey) }}
+                {% if maskedApiKey %}
+                    <div class="text-muted small">Clé actuelle : <code>{{ maskedApiKey }}</code></div>
+                {% endif %}
+            </div>
+            <div class="col-md-6">{{ form_row(form.apiPath) }}</div>
+            <div class="col-md-3">{{ form_row(form.temperature) }}</div>
+            <div class="col-md-3">{{ form_row(form.timeoutSeconds) }}</div>
+            <div class="col-md-6">{{ form_row(form.active) }}</div>
+            <div class="col-md-6">{{ form_row(form.isDefault) }}</div>
+            <div class="col-12">{{ form_row(form.extraHeaders) }}</div>
+            <div class="col-12">{{ form_row(form.systemPrompt) }}</div>
+            <div class="col-12">{{ form_row(form.contextTemplate) }}</div>
+        </div>
+        <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle me-1"></i>Enregistrer
+            </button>
+            <a href="{{ path('app_admin_ai_configs') }}" class="btn btn-outline-secondary">Annuler</a>
+        </div>
+        {{ form_end(form) }}
+    </div>
+</div>
+
+{% if config %}
+<div class="card mt-4">
+    <div class="card-header"><h6 class="mb-0">Test manuel du connecteur</h6></div>
+    <div class="card-body">
+        <form method="post" action="{{ path('app_admin_ai_config_test', {id: config.id}) }}" data-turbo="false">
+            <div class="mb-3">
+                <label class="form-label">Prompt de test</label>
+                <textarea name="test_prompt" class="form-control" rows="4" placeholder="Exemple : résume le rôle de ce connecteur dans la prise de décision RH."></textarea>
+            </div>
+            <button type="submit" class="btn btn-outline-primary">Lancer le test</button>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

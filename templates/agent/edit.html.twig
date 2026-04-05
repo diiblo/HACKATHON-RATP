@@ -1,0 +1,19 @@
+{% extends 'base.html.twig' %}
+{% block title %}Modifier — {{ agent.fullName }}{% endblock %}
+{% block body %}
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('app_agent_index') }}">Agents</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('app_agent_show', {id: agent.id}) }}">{{ agent.fullName }}</a></li>
+            <li class="breadcrumb-item active">Modifier</li>
+        </ol>
+    </nav>
+    <h1 class="h3"><i class="bi bi-pencil me-2 text-primary"></i>Modifier l'agent</h1>
+</div>
+<div class="card">
+    <div class="card-body">
+        {% include 'agent/_form.html.twig' %}
+    </div>
+</div>
+{% endblock %}

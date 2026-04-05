@@ -1,0 +1,169 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Fiche agent — {{ agent.fullName }}{% endblock %}
+
+{% block body %}
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ path('app_agent_index') }}">Agents</a></li>
+                <li class="breadcrumb-item active">{{ agent.fullName }}</li>
+            </ol>
+        </nav>
+        <h1 class="h3 mb-0">
+            <i class="bi bi-person-badge me-2 text-primary"></i>
+            {{ agent.fullName }}
+            <span class="badge {{ scoreCalc.getBadgeClass(score) }} ms-2 fs-6">
+                Niveau {{ score }}/4 — {{ scoreCalc.getLevelLabel(score) }}
+            </span>
+        </h1>
+        <div class="text-muted mt-1">
+            <code>{{ agent.matricule }}</code>
+            {% if agent.centre %} · {{ agent.centre }}{% endif %}
+            {% if agent.dateNaissance %} · né(e) le {{ agent.dateNaissance|date('d/m/Y') }}{% endif %}
+            {% if not agent.actif %} · <span class="badge bg-secondary">Inactif</span>{% endif %}
+        </div>
+    </div>
+    {% if is_granted('ROLE_MANAGER') or is_granted('ROLE_RH') %}
+    <div class="d-flex gap-2 no-print flex-wrap">
+        <a href="{{ path('app_signalement_index', {agent: agent.id}) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-funnel me-1"></i>Signalements filtrés
+        </a>
+        <a href="{{ path('app_agent_export_pdf', {id: agent.id}) }}" class="btn btn-danger" target="_blank">
+            <i class="bi bi-file-earmark-pdf-fill me-1"></i>Exporter dossier PDF
+        </a>
+        <button type="button" class="btn btn-outline-dark" onclick="window.print()">
+            <i class="bi bi-printer me-1"></i>Imprimer
+        </button>
+        <a href="{{ path('app_agent_edit', {id: agent.id}) }}" class="btn btn-outline-primary">
+            <i class="bi bi-pencil me-1"></i>Modifier
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+{# Indicateur visuel score #}
+{% set scoreLevel = scoreCalc.getLevel(score) %}
+{% if scoreLevel == 'alerte' %}
+<div class="alert alert-danger d-flex align-items-center gap-3">
+    <i class="bi bi-exclamation-octagon-fill fs-3"></i>
+    <div>
+        <strong>Niveau d'alerte CRITIQUE</strong> — Score brut : {{ score }} point(s)<br>
+        <small>Cet agent a accumulé un volume élevé d'incidents récents. Une revue RH ou juridique est recommandée.</small>
+    </div>
+</div>
+{% elseif scoreLevel == 'attention' %}
+<div class="alert alert-warning d-flex align-items-center gap-3">
+    <i class="bi bi-exclamation-triangle-fill fs-3"></i>
+    <div>
+        <strong>Niveau ATTENTION</strong> — Score brut : {{ score }} point(s)<br>
+        <small>Plusieurs incidents récents méritent un suivi attentif.</small>
+    </div>
+</div>
+{% endif %}
+
+{# Stats rapides #}
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card text-center">
+            <div class="card-body py-3">
+                <div class="fs-3 fw-bold text-primary">{{ signalements|length }}</div>
+                <div class="small text-muted">Total signalements</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center">
+            <div class="card-body py-3">
+                <div class="fs-3 fw-bold text-danger">{{ nbIncidents }}</div>
+                <div class="small text-muted">Incidents</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center">
+            <div class="card-body py-3">
+                <div class="fs-3 fw-bold text-success">{{ nbPositifs }}</div>
+                <div class="small text-muted">Avis positifs</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center">
+            <div class="card-body py-3">
+                <div class="fs-3 fw-bold {{ nbLast90 > 0 ? 'text-warning' : 'text-muted' }}">{{ nbLast90 }}</div>
+                <div class="small text-muted">Incidents (90 jours)</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Historique des signalements #}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Historique des signalements</h5>
+    </div>
+    <div class="card-body p-0">
+        {% if signalements|length == 0 %}
+            <p class="text-muted text-center py-4 mb-0">Aucun signalement pour cet agent.</p>
+        {% else %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date des faits</th>
+                        <th>Titre</th>
+                        <th>Type</th>
+                        <th>Canal</th>
+                        <th>Gravité</th>
+                        <th>Statut</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in signalements %}
+                    <tr>
+                        <td class="text-muted small">{{ s.dateFait|date('d/m/Y') }}</td>
+                        <td>{{ s.titre|u.truncate(45, '…') }}</td>
+                        <td>
+                            {% if s.type == 'incident' %}
+                                <span class="badge bg-danger">Incident</span>
+                            {% else %}
+                                <span class="badge bg-success">Positif</span>
+                            {% endif %}
+                        </td>
+                        <td><span class="text-muted small">{{ s.canalLabel }}</span></td>
+                        <td>
+                            {% if s.gravite %}
+                                <span class="badge {{ s.graviteBadge }}">{{ s.gravite|capitalize }}</span>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td>
+                            <span class="badge {{ s.statutBadge }}">{{ s.statutLabel }}</span>
+                        </td>
+                        <td>
+                            <a href="{{ path('app_signalement_show', {id: s.id}) }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        @media print {
+            nav, .sidebar, .navbar, .btn, .breadcrumb, .alert, .no-print { display: none !important; }
+            body { background: #fff !important; }
+            .main-content, .card { box-shadow: none !important; }
+        }
+    </style>
+{% endblock %}

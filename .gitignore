@@ -1,0 +1,43 @@
+# Environment
+/.env.local
+/.env.local.php
+/.env.*.local
+/config/secrets/prod/prod.decrypt.private.php
+
+# Dependencies
+/vendor/
+
+# Symfony runtime
+/var/
+/public/bundles/
+/public/assets/
+/assets/vendor/
+
+# Tests and local databases
+/.phpunit.cache/
+/phpunit.xml
+/*.db
+/*.sqlite
+/var/*.db
+/var/*.sqlite
+
+# Uploads and generated files
+/public/uploads/
+/var/uploads/
+/var/share/
+
+# IDE and local tooling
+/.idea/
+/.claude/
+/.codex
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Documentation: ignore all Markdown except README
+*.md
+!README.md

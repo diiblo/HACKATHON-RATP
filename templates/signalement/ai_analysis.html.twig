@@ -1,0 +1,158 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Analyse IA — {{ signalement.titre }}{% endblock %}
+
+{% block body %}
+<div class="mb-3">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('app_signalement_index') }}">Signalements</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('app_signalement_show', {id: signalement.id}) }}">{{ signalement.titre|u.truncate(30, '…') }}</a></li>
+            <li class="breadcrumb-item active">Analyse IA</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1"><i class="bi bi-stars me-2 text-primary"></i>Analyse IA du dossier</h1>
+        <div class="text-muted small">Fournisseur utilisé : {{ analysis.provider }}</div>
+        {% if analysis.usedFallback %}
+        <div class="text-warning small">Bascule automatique utilisée pour éviter un blocage fournisseur.</div>
+        {% endif %}
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        {% if is_granted('ROLE_MANAGER') %}
+        <form method="post" action="{{ path('app_signalement_ai_alert', {id: signalement.id}) }}" data-turbo="false">
+            <input type="hidden" name="_token" value="{{ csrf_token('ai-alert-' ~ signalement.id) }}">
+            <button type="submit" class="btn btn-dark">
+                <i class="bi bi-send-exclamation me-1"></i>Envoyer l'alerte IA
+            </button>
+        </form>
+        <form method="post" action="{{ path('app_courrier_generate', {signalementId: signalement.id}) }}" data-turbo="false">
+            <input type="hidden" name="mode" value="ai">
+            <button type="submit" class="btn btn-outline-primary">
+                <i class="bi bi-file-earmark-text me-1"></i>Créer le courrier IA
+            </button>
+        </form>
+        {% endif %}
+        <a href="{{ path('app_signalement_show', {id: signalement.id}) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Retour au dossier
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header"><h6 class="mb-0">Synthèse</h6></div>
+            <div class="card-body">
+                <p class="mb-0">{{ analysis.summary }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header"><h6 class="mb-0">Qualification suggérée</h6></div>
+            <div class="card-body">
+                <p class="mb-0">{{ analysis.qualification }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header"><h6 class="mb-0">Décision recommandée</h6></div>
+            <div class="card-body">
+                <p class="mb-1">{{ analysis.recommendedDecision }}</p>
+                <div class="text-muted small">Urgence : {{ analysis.urgencyLevel }}</div>
+                <div class="text-muted small">Prochain statut suggéré : {{ analysis.recommendedStatus }}</div>
+                <div class="text-muted small">Score de priorité IA : {{ analysis.decisionScore }}/4</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header"><h6 class="mb-0">Facteurs de risque</h6></div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    {% for factor in analysis.riskFactors %}
+                        <li>{{ factor }}</li>
+                    {% else %}
+                        <li class="text-muted">Aucun facteur remonté.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header"><h6 class="mb-0">Actions recommandées</h6></div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    {% for action in analysis.recommendedActions %}
+                        <li>{{ action }}</li>
+                    {% else %}
+                        <li class="text-muted">Aucune action recommandée.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header"><h6 class="mb-0">Préservation vidéo / preuve</h6></div>
+            <div class="card-body">
+                <p class="mb-0">{{ analysis.videoPreservationAction }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header"><h6 class="mb-0">Aide à la rédaction du courrier</h6></div>
+            <div class="card-body">
+                <p class="mb-0">{{ analysis.courrierGuidance }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header"><h6 class="mb-0">Brouillon de courrier IA</h6></div>
+            <div class="card-body">
+                <pre class="mb-0 p-3 bg-light rounded" style="white-space: pre-wrap;">{{ analysis.courrierDraft }}</pre>
+            </div>
+        </div>
+    </div>
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header"><h6 class="mb-0">Email d'alerte proposé</h6></div>
+            <div class="card-body">
+                <div class="small text-muted mb-2">Destinataires suggérés : {{ analysis.alertTargetRoles|join(', ') }}</div>
+                <div class="fw-semibold mb-2">{{ analysis.alertEmailSubject }}</div>
+                <pre class="mb-0 p-3 bg-light rounded" style="white-space: pre-wrap;">{{ analysis.alertEmailBody }}</pre>
+            </div>
+        </div>
+    </div>
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header"><h6 class="mb-0">Chaîne IA et résilience</h6></div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    {% for attempt in analysis.attempts %}
+                        <li>
+                            <strong>{{ attempt.name }}</strong>
+                            {% if attempt.status == 'success' %}
+                                : utilisé{% if attempt.fallback ?? false %} après fallback{% endif %}
+                            {% else %}
+                                : échec{% if attempt.retryable ?? false %} réessayable{% endif %}
+                                {% if attempt.error ?? null %} — {{ attempt.error }}{% endif %}
+                            {% endif %}
+                        </li>
+                    {% else %}
+                        <li class="text-muted">Aucune tentative enregistrée.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

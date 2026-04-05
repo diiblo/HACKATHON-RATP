@@ -1,0 +1,28 @@
+{% extends 'public/layout.html.twig' %}
+
+{% block title %}Accès Rapide QR — RATP{% endblock %}
+{% block header_subtitle %}Simulation QR / NFC terrain{% endblock %}
+
+{% block body %}
+<div class="alert alert-primary">
+    <strong>Simulation terrain.</strong> Chaque QR ci-dessous ouvre le formulaire public avec ligne, véhicule, arrêt et horodatage préremplis comme si l’usager avait scanné un QR embarqué.
+</div>
+
+<div class="row g-3">
+    {% for entry in entries %}
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div>
+                    <div class="fw-semibold">{{ entry.code }}</div>
+                    <div class="text-muted small">Ligne {{ entry.line }} · Véhicule {{ entry.vehicle }} · {{ entry.stop }}</div>
+                </div>
+                <a href="{{ path('app_public_scan_qr', {code: entry.code}) }}" class="btn btn-primary">
+                    <i class="bi bi-qr-code-scan me-1"></i>Scanner
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

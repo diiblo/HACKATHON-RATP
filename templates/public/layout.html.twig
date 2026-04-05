@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}RATP — Signalement{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --ratp-blue: #003189;
+            --ratp-ink: #0f172a;
+            --ratp-sky: #e8eefb;
+            --ratp-border: rgba(0, 49, 137, 0.12);
+        }
+        body {
+            background:
+                radial-gradient(circle at top right, rgba(0, 49, 137, 0.14), transparent 34%),
+                linear-gradient(180deg, #f7f9fe 0%, #eef3fb 100%);
+            color: var(--ratp-ink);
+        }
+        .ratp-header {
+            background:
+                linear-gradient(135deg, #00256a 0%, #003189 54%, #0a4db3 100%);
+            color: white;
+            padding: 1.2rem 0 1.6rem;
+            box-shadow: inset 0 -1px 0 rgba(255,255,255,.08);
+        }
+        .ratp-header .brand-wrap { display: flex; align-items: center; gap: .9rem; }
+        .ratp-header .brand-logo {
+            height: 52px;
+            width: auto;
+            display: block;
+            filter: drop-shadow(0 6px 14px rgba(0,0,0,.18));
+        }
+        .ratp-header .brand { font-weight: 800; font-size: 1.45rem; letter-spacing: -0.04em; }
+        .ratp-header .subtitle { font-weight: 400; opacity: .82; font-size: 0.96rem; }
+        .card {
+            border: 1px solid var(--ratp-border);
+            box-shadow: 0 18px 34px rgba(15, 23, 42, 0.06);
+            border-radius: 22px;
+        }
+        .public-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: .45rem;
+            padding: .45rem .7rem;
+            border-radius: 999px;
+            background: rgba(255,255,255,.14);
+            border: 1px solid rgba(255,255,255,.18);
+        }
+        .public-shell {
+            margin-top: -1.1rem;
+        }
+        .form-control, .form-select {
+            border-radius: 14px;
+            border-color: rgba(15, 23, 42, 0.12);
+            padding: .85rem 1rem;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #003189 0%, #0a4db3 100%);
+            border: none;
+            box-shadow: 0 10px 18px rgba(0, 49, 137, 0.2);
+        }
+        .alert {
+            border-radius: 18px;
+        }
+        .voice-recorder {
+            border: 1px solid var(--ratp-border);
+            border-radius: 18px;
+            background: #f8fbff;
+            padding: 1rem;
+        }
+        .voice-recorder-live {
+            display: inline-flex;
+            align-items: center;
+            gap: .55rem;
+            padding: .5rem .75rem;
+            border-radius: 999px;
+            background: rgba(220, 53, 69, 0.08);
+            color: #842029;
+        }
+        .voice-pulse {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #dc3545;
+            box-shadow: 0 0 0 rgba(220, 53, 69, 0.6);
+            animation: voice-pulse 1.2s infinite;
+        }
+        .voice-recorder-preview {
+            margin-top: 1rem;
+            padding: .85rem;
+            border-radius: 14px;
+            background: white;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+        }
+        @keyframes voice-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.5); }
+            70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+        }
+    </style>
+    {% block stylesheets %}{% endblock %}
+</head>
+<body>
+<header class="ratp-header mb-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <div class="brand-wrap">
+                    <img src="{{ asset('images/ratp-logo.png') }}" alt="Logo RATP" class="brand-logo">
+                    <div>
+                        <div class="brand">RATP</div>
+                        <div class="subtitle">{% block header_subtitle %}Formulaire de signalement{% endblock %}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="text-white-50 small d-none d-md-flex align-items-center">
+                <span class="public-kicker"><i class="bi bi-shield-lock"></i> Recueil d'informations confidentiel</span>
+            </div>
+        </div>
+    </div>
+</header>
+
+<div class="container pb-5 public-shell" style="max-width: 760px;">
+    {% for type, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ type == 'error' ? 'danger' : type }} alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    {% block body %}{% endblock %}
+</div>
+
+<footer class="text-center text-muted small py-4">
+    RATP — Régie Autonome des Transports Parisiens<br>
+    <a href="{{ path('app_public_demo') }}" class="text-muted">Démo hackathon</a>
+    &nbsp;·&nbsp;
+    <a href="{{ path('app_public_quick_access') }}" class="text-muted">Accès rapide QR</a>
+    &nbsp;·&nbsp;
+    <a href="{{ path('app_public_signalement_site') }}" class="text-muted">Signalement site</a>
+    &nbsp;·&nbsp;
+    <a href="{{ path('app_public_signalement_rs') }}" class="text-muted">Signalement réseaux sociaux</a>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const formatDuration = (seconds) => {
+        const mins = String(Math.floor(seconds / 60)).padStart(2, '0');
+        const secs = String(seconds % 60).padStart(2, '0');
+        return `${mins}:${secs}`;
+    };
+
+    document.querySelectorAll('[data-voice-recorder]').forEach((recorder) => {
+        const input = document.getElementById(recorder.dataset.inputId);
+        if (!input) {
+            return;
+        }
+
+        const startBtn = recorder.querySelector('[data-action="start"]');
+        const stopBtn = recorder.querySelector('[data-action="stop"]');
+        const resetBtn = recorder.querySelector('[data-action="reset"]');
+        const status = recorder.querySelector('[data-role="status"]');
+        const timer = recorder.querySelector('[data-role="timer"]');
+        const live = recorder.querySelector('[data-role="live"]');
+        const preview = recorder.querySelector('[data-role="preview"]');
+        const audio = recorder.querySelector('[data-role="audio"]');
+        const errorBox = recorder.querySelector('[data-role="error"]');
+
+        let mediaRecorder = null;
+        let stream = null;
+        let chunks = [];
+        let timerId = null;
+        let startedAt = null;
+
+        const showError = (message) => {
+            errorBox.textContent = message;
+            errorBox.classList.remove('d-none');
+        };
+
+        const clearError = () => {
+            errorBox.textContent = '';
+            errorBox.classList.add('d-none');
+        };
+
+        const stopStream = () => {
+            if (stream) {
+                stream.getTracks().forEach((track) => track.stop());
+                stream = null;
+            }
+        };
+
+        const resetRecording = () => {
+            stopStream();
+            if (timerId) {
+                clearInterval(timerId);
+                timerId = null;
+            }
+            startedAt = null;
+            chunks = [];
+            mediaRecorder = null;
+            input.value = '';
+            audio.removeAttribute('src');
+            preview.classList.add('d-none');
+            live.classList.add('d-none');
+            stopBtn.classList.add('d-none');
+            resetBtn.classList.add('d-none');
+            startBtn.classList.remove('d-none');
+            status.textContent = 'Appuyez pour enregistrer votre message vocal.';
+            timer.textContent = '00:00';
+            clearError();
+        };
+
+        if (!navigator.mediaDevices || typeof MediaRecorder === 'undefined') {
+            startBtn.disabled = true;
+            showError('Enregistrement micro indisponible sur ce navigateur.');
+            return;
+        }
+
+        startBtn.addEventListener('click', async () => {
+            clearError();
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                chunks = [];
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.addEventListener('dataavailable', (event) => {
+                    if (event.data.size > 0) {
+                        chunks.push(event.data);
+                    }
+                });
+                mediaRecorder.addEventListener('stop', () => {
+                    const blob = new Blob(chunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+                    const extension = blob.type.includes('mp4') || blob.type.includes('m4a') ? 'm4a' : 'webm';
+                    const file = new File([blob], `message-vocal.${extension}`, { type: blob.type || 'audio/webm' });
+                    const transfer = new DataTransfer();
+                    transfer.items.add(file);
+                    input.files = transfer.files;
+                    audio.src = URL.createObjectURL(blob);
+                    preview.classList.remove('d-none');
+                    status.textContent = 'Message vocal enregistré, prêt à être envoyé.';
+                    live.classList.add('d-none');
+                    stopBtn.classList.add('d-none');
+                    resetBtn.classList.remove('d-none');
+                    startBtn.classList.remove('d-none');
+                    if (timerId) {
+                        clearInterval(timerId);
+                        timerId = null;
+                    }
+                    stopStream();
+                });
+
+                mediaRecorder.start();
+                startedAt = Date.now();
+                timer.textContent = '00:00';
+                timerId = window.setInterval(() => {
+                    timer.textContent = formatDuration(Math.floor((Date.now() - startedAt) / 1000));
+                }, 500);
+                live.classList.remove('d-none');
+                stopBtn.classList.remove('d-none');
+                startBtn.classList.add('d-none');
+                resetBtn.classList.add('d-none');
+                status.textContent = 'Enregistrement en cours...';
+            } catch (error) {
+                showError('Impossible d’accéder au microphone. Vérifiez l’autorisation du navigateur.');
+            }
+        });
+
+        stopBtn.addEventListener('click', () => {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+        });
+
+        resetBtn.addEventListener('click', resetRecording);
+    });
+});
+</script>
+{% block javascripts %}{% endblock %}
+</body>
+</html>
